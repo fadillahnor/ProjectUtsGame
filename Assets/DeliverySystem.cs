@@ -1,43 +1,73 @@
 using UnityEngine;
+using TMPro;
+using UnityEngine.SceneManagement;
 
 public class DeliverySystem : MonoBehaviour
 {
+    [Header("Package State")]
     public bool packagePicked = false;
 
+    [Header("Timer")]
     public float timer = 60f;
     private bool timerRunning = false;
 
-    void Update()
+    [Header("Game State")]
+    private bool isPaused = false;
+
+    [Header("UI TextMeshPro")]
+    public TextMeshProUGUI timerText;
+    public TextMeshProUGUI packageText;
+    public TextMeshProUGUI infoText;
+
+    [Header("Scene")]
+    public string mainMenuSceneName = "mainmenu";
+
+    private void Start()
     {
-        // TIMER BERJALAN
+        Time.timeScale = 1f;
+
+        UpdateUI();
+        ShowInfo("Ambil paket terlebih dahulu!");
+    }
+
+    private void Update()
+    {
+        if (isPaused)
+            return;
+
         if (timerRunning)
         {
             timer -= Time.deltaTime;
 
-            Debug.Log("Sisa Waktu : " + Mathf.Ceil(timer));
-
-            // JIKA WAKTU HABIS
             if (timer <= 0)
             {
+                timer = 0;
                 timerRunning = false;
-                Debug.Log("Waktu Habis! Gagal Mengantar Paket");
+                packagePicked = false;
+
+                ShowInfo("Waktu Habis! Gagal Mengantar Paket");
             }
+
+            UpdateUI();
         }
     }
 
-    // SAAT MENABRAK OBJECT
     private void OnTriggerEnter(Collider other)
     {
+        if (isPaused)
+            return;
+
         // AMBIL PAKET
         if (other.CompareTag("Package"))
         {
             packagePicked = true;
             timerRunning = true;
 
-            Debug.Log("Paket Diambil!");
+            ShowInfo("Paket Diambil! Segera antar paket!");
 
-            // HAPUS CUBE PAKET
             Destroy(other.gameObject);
+
+            UpdateUI();
         }
 
         // ANTAR PAKET
@@ -46,15 +76,65 @@ public class DeliverySystem : MonoBehaviour
             if (packagePicked)
             {
                 timerRunning = false;
-
-                Debug.Log("Paket Sudah Diantar!");
-
                 packagePicked = false;
+
+                ShowInfo("Paket Sudah Diantar! Kembali ke Main Menu...");
+
+                UpdateUI();
+
+                Time.timeScale = 1f;
+                SceneManager.LoadScene(mainMenuSceneName);
             }
             else
             {
-                Debug.Log("Ambil paket dulu!");
+                ShowInfo("Ambil paket dulu!");
             }
         }
+    }
+
+    public void PauseGame()
+    {
+        isPaused = true;
+        Time.timeScale = 0f;
+
+        UpdateUI();
+    }
+
+    public void ResumeGame()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+
+        UpdateUI();
+    }
+
+    private void UpdateUI()
+    {
+        if (timerText != null)
+        {
+            timerText.text = "Sisa Waktu: " + Mathf.Ceil(timer).ToString();
+        }
+
+        if (packageText != null)
+        {
+            if (packagePicked)
+            {
+                packageText.text = "Status Paket: Sudah Diambil";
+            }
+            else
+            {
+                packageText.text = "Status Paket: Belum Diambil";
+            }
+        }
+    }
+
+    private void ShowInfo(string message)
+    {
+        if (infoText != null)
+        {
+            infoText.text = message;
+        }
+
+        Debug.Log(message);
     }
 }
